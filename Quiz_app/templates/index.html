@@ -1,0 +1,40 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz App</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="box">
+    <h1>Quiz App</h1>
+
+    <p class="info">Score: {{ score }} | Question {{ current }} of {{ total }}</p>
+
+    <!-- Progress bar -->
+    <div class="bar-bg">
+      <div class="bar-fill" style="width: {{ percent }}%;"></div>
+    </div>
+
+    <!-- Feedback from previous answer -->
+    {% if feedback %}
+      <div class="feedback {{ 'correct' if feedback.correct else 'wrong' }}">
+        <b>{{ feedback.message }}</b> {{ feedback.correct_answer }}
+      </div>
+    {% endif %}
+
+    <!-- Question -->
+    <p class="question">{{ question }}</p>
+
+    <!-- Answer buttons (no JavaScript — plain form submit) -->
+    <form action="/answer" method="POST">
+      {% for choice in choices %}
+        <button type="submit" name="choice" value="{{ loop.index0 }}" class="btn">
+          {{ choice }}
+        </button>
+      {% endfor %}
+    </form>
+  </div>
+</body>
+</html>
