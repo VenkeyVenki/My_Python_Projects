@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Password Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 60px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 { text-align: center; margin-bottom: 20px; color: #333; }
+
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    label { display: block; margin-top: 12px; font-size: 14px; color: #555; }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .checks { margin-top: 10px; }
+    .checks label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover { background: #43a047; }
+
+    .error { color: red; font-size: 13px; margin-top: 8px; }
+
+    .result {
+      margin-top: 16px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+    }
+
+    .pwd-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    .pwd-row:last-child { border-bottom: none; }
+
+    .pwd-text { font-family: monospace; word-break: break-all; flex: 1; }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin: 0 8px;
+      white-space: nowrap;
+    }
+
+    .Weak   { background: #fdecea; color: #c62828; }
+    .Medium { background: #fff8e1; color: #f57f17; }
+    .Strong { background: #e8f5e9; color: #2e7d32; }
+
+    .copy-btn {
+      width: auto;
+      margin: 0;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #2196F3;
+      border-radius: 4px;
+    }
+
+    .copy-btn:hover { background: #1976D2; }
+  </style>
+</head>
+<body>
+  <h1>🔐 Password Generator</h1>
+  <div class="card">
+
+    <label>Password Length (4–64):
+      <input type="number" id="length" value="12" min="4" max="64"/>
+    </label>
+
+    <label>Number of Passwords:
+      <select id="count">
+        <option value="1">1</option>
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+      </select>
+    </label>
+
+    <div class="checks">
+      <strong style="font-size:14px;">Include:</strong>
+      <label><input type="checkbox" id="lower" checked/> Lowercase (a-z)</label>
+      <label><input type="checkbox" id="upper" checked/> Uppercase (A-Z)</label>
+      <label><input type="checkbox" id="digits" checked/> Numbers (0-9)</label>
+      <label><input type="checkbox" id="symbols"/> Symbols (!@#$)</label>
+    </div>
+
+    <button onclick="generate()">Generate</button>
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result" style="display:none;">
+      <div id="pwdList"></div>
+    </div>
+
+  </div>
+
+  <script>
+    async function generate() {
+      document.getElementById('error').textContent = '';
+      document.getElementById('result').style.display = 'none';
+
+      const payload = {
+        length:    parseInt(document.getElementById('length').value),
+        lowercase: document.getElementById('lower').checked,
+        uppercase: document.getElementById('upper').checked,
+        digits:    document.getElementById('digits').checked,
+        symbols:   document.getElementById('symbols').checked,
+        count:     parseInt(document.getElementById('count').value)
+      };
+
+      try {
+        const res  = await fetch('http://localhost:5001/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) { document.getElementById('error').textContent = data.error; return; }
+
+        const list = document.getElementById('pwdList');
+        list.innerHTML = '';
+        data.passwords.forEach(({ password, strength }) => {
+          const row = document.createElement('div');
+          row.className = 'pwd-row';
+          row.innerHTML = `
+            <span class="pwd-text">${password}</span>
+            <span class="badge ${strength}">${strength}</span>
+            <button class="copy-btn" onclick="copy(this,'${password}')">Copy</button>
+          `;
+          list.appendChild(row);
+        });
+        document.getElementById('result').style.display = 'block';
+      } catch {
+        document.getElementById('error').textContent = 'Cannot connect. Is Flask running on port 5001?';
+      }
+    }
+
+    function copy(btn, pwd) {
+      navigator.clipboard.writeText(pwd).then(() => {
+        btn.textContent = '✓ Done';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
